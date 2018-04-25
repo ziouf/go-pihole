@@ -2,15 +2,15 @@
 
 DIR=$(cd $(dirname ${0}) && pwd)
 
-dep ensure
-dep ensure -update
+# dep ensure
+# dep ensure -update
 
-cd ${DIR}/ui
+# cd ${DIR}/ui
 
-npm run-script build
+# npm run-script build
 
-cd ${DIR}
+# cd ${DIR}
 
 echo "========================="
 echo "Starting go server"
-go run *.go
+go run *.go --dnsmasq-config-dir $(pwd)/tmp

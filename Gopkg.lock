@@ -44,7 +44,10 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = ["."]
+  packages = [
+    ".",
+    "dialects/sqlite"
+  ]
   revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
   version = "v1.9.1"
 
@@ -59,6 +62,12 @@
   packages = ["."]
   revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
   version = "v1.7.6"
+
+[[projects]]
+  name = "github.com/mattn/go-sqlite3"
+  packages = ["."]
+  revision = "6c771bb9887719704b210e87e934f08be014bdb1"
+  version = "v1.6.0"
 
 [[projects]]
   branch = "master"
@@ -133,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "745fb9ad09c35e15d13c1def0bc7f2d2ffd26719f4df2b5f11ddc50a83d04d70"
+  inputs-digest = "4fc32b3ba9bce0c7092148f5a37749a1ba550a889d21c63fe85d96e9ef3cd048"
   solver-name = "gps-cdcl"
   solver-version = 1
