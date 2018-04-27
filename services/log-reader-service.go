@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 	"runtime"
+	"sync"
 
 	"cm-cloud.fr/go-pihole/models"
 	"github.com/hpcloud/tail"
@@ -15,10 +16,12 @@ func StartLogReaderService() {
 	file := viper.GetString("dnsmasq-log-file")
 	if t, err := tail.TailFile(file, tail.Config{ /* Follow: true, ReOpen: true */ }); err == nil {
 
-		for i := 0; i < runtime.NumCPU(); i++ {
+		for i := 0; i < runtime.NumCPU()*4; i++ {
 			go logFileReader(t)
 		}
-		go publishLogs()
+		for i := 0; i < 4; i++ {
+			go publishLogs()
+		}
 
 	} else {
 		log.Printf("Error while tailing file %s : %s", t.Filename, err)
@@ -34,7 +37,9 @@ func logFileReader(t *tail.Tail) {
 	}
 }
 
-const bulkSize = 100
+const bulkSize = 250
+
+var mutex sync.Mutex
 
 func publishLogs() {
 	buffer := make([]*models.DnsmasqLog, 0)
@@ -48,6 +53,7 @@ func publishLogs() {
 }
 
 func persist(buffer []*models.DnsmasqLog) []*models.DnsmasqLog {
+	mutex.Lock()
 	tx := models.Db.Begin()
 	for _, item := range buffer {
 		if tx.NewRecord(item) {
@@ -55,6 +61,6 @@ func persist(buffer []*models.DnsmasqLog) []*models.DnsmasqLog {
 		}
 	}
 	tx.Commit()
-
+	mutex.Unlock()
 	return make([]*models.DnsmasqLog, 0)
 }
