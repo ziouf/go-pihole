@@ -12,6 +12,7 @@ import (
 	"cm-cloud.fr/go-pihole/configs"
 	"cm-cloud.fr/go-pihole/models"
 	"cm-cloud.fr/go-pihole/process"
+	"cm-cloud.fr/go-pihole/services"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -22,6 +23,7 @@ func init() {
 	configs.InitConfig()
 	models.InitDB()
 
+	services.StartLogReaderService()
 }
 
 func main() {

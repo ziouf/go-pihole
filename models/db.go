@@ -18,13 +18,13 @@ func InitDB() {
 
 	if Db, err = gorm.Open("sqlite3", viper.GetString("db_file")); err != nil {
 		log.Fatalln(err)
-		// panic("Fialed to connect database")
 	}
 
 	// Auto migrate schema
 	Db.AutoMigrate(&DnsmasqLog{})
 
 	if !Db.HasTable(&DnsmasqLog{}) {
+		log.Println("Create table : DnsmasqLog")
 		Db.CreateTable(&DnsmasqLog{})
 	}
 

@@ -13,4 +13,4 @@ DIR=$(cd $(dirname ${0}) && pwd)
 
 echo "========================="
 echo "Starting go server"
-go run *.go --dnsmasq-config-dir $(pwd)/tmp
+go run *.go --dnsmasq-config-dir $(pwd)/tmp --dnsmasq-log-file $(pwd)/tmp/pihole.log
