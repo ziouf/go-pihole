@@ -28,10 +28,9 @@ var (
 	deleteMutx sync.Mutex
 
 	tables = []interface{}{
-		DhcpLease{},
 		DnsmasqLog{},
 	}
-	tablesToClean = []interface{}{
+	tablesToAutoClean = []interface{}{
 		DnsmasqLog{},
 	}
 
@@ -54,20 +53,31 @@ func InitDB() {
 
 	Db.Exec("PRAGMA auto_vacuum=FULL;")
 
-	for _, t := range tables {
-		// Auto migrate schema
-		Db.AutoMigrate(&t)
-
-		if !Db.HasTable(&t) {
-			Db.CreateTable(&t)
-		}
-	}
+	initDataModel()
 
 	go insertService()
 	go updateService()
 	go deleteService()
 	// Init cleaning service
 	go startDbCleaningService()
+}
+
+func initDataModel() {
+	// init Dnsmasq Table
+	if Db.HasTable(&DnsmasqLog{}) {
+		Db.DropTableIfExists(&DnsmasqLog{})
+	}
+	if !Db.HasTable(&DnsmasqLog{}) {
+		Db.CreateTable(&DnsmasqLog{})
+	}
+	// Auto migrate schema
+	Db.AutoMigrate(&DnsmasqLog{})
+
+	if Db.Error != nil {
+		log.Fatalln(Db.Error)
+	}
+
+	// init other tables below ...
 }
 
 // Insert insert data
@@ -159,7 +169,7 @@ func deleteService() {
 func startDbCleaningService() {
 	time.Sleep(cleaningFreq)
 	for {
-		for _, t := range tablesToClean {
+		for _, t := range tablesToAutoClean {
 			tx := Db.Begin()
 
 			tx.Delete(t, "date < ?", time.Now().Add(-1*day*7))

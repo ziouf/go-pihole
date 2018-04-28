@@ -16,11 +16,11 @@ func NewDnsmasqLog() *DnsmasqLog {
 // DnsmasqLog Data structure of DNSMASQ log line
 type DnsmasqLog struct {
 	// gorm.Model
-	Date     time.Time `gorm:"not null;index:date_process"`
-	Process  string    `gorm:"not null;index:date_process"`
-	PID      int       `gorm:"not null;index:date_process"`
-	QID      int       `gorm:"not null:index:qid"`
-	SourceIP string    `gorm:"not null"`
+	Date     time.Time `gorm:"not null;index:idx_date_process_qid"`
+	Process  string    `gorm:"not null;index:idx_date_process_qid"`
+	PID      int       `gorm:"not null"`
+	QID      int       `gorm:"not null;index:idx_date_process_qid"`
+	SourceIP string    `gorm:"not null;index:idx_source_ip"`
 	QType    string    `gorm:"not null"`
 	Query    string    `gorm:"not null"`
 }
