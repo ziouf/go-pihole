@@ -6,20 +6,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
+
+// NewDnsmasqLog Contructor
+func NewDnsmasqLog() *DnsmasqLog {
+	return &DnsmasqLog{}
+}
 
 // DnsmasqLog Data structure of DNSMASQ log line
 type DnsmasqLog struct {
-	gorm.Model
-	Date     time.Time `gorm:not null;index:date_process`
-	Process  string    `gorm:not null;index:date_process`
-	PID      int       `gorm:not null;index:date_process`
-	QID      int       `gorm:not null:index:qid`
-	SourceIP string    `gorm:not null`
-	QType    string    `gorm:not null`
-	Query    string    `gorm:not null`
+	// gorm.Model
+	Date     time.Time `gorm:"not null;index:date_process"`
+	Process  string    `gorm:"not null;index:date_process"`
+	PID      int       `gorm:"not null;index:date_process"`
+	QID      int       `gorm:"not null:index:qid"`
+	SourceIP string    `gorm:"not null"`
+	QType    string    `gorm:"not null"`
+	Query    string    `gorm:"not null"`
 }
 
 func (l *DnsmasqLog) String() string {
