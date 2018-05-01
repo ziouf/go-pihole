@@ -4,11 +4,11 @@ DIR=$(cd $(dirname ${0}) && pwd)
 
 # dep ensure
 # dep ensure -update
-go get -u github.com/gorilla/handlers
-go get -u github.com/gorilla/mux
-go get -u github.com/hpcloud/tail
-go get -u github.com/spf13/viper
-go get -u github.com/jinzhu/gorm/...
+# go get -u github.com/gorilla/handlers
+# go get -u github.com/gorilla/mux
+# go get -u github.com/hpcloud/tail
+# go get -u github.com/spf13/viper
+# go get -u github.com/jinzhu/gorm/...
 
 # cd ${DIR}/ui
 

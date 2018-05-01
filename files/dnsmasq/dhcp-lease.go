@@ -1,4 +1,4 @@
-package models
+package dnsmasq
 
 import (
 	"errors"
@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+// NewDhcpLease Create new DhcpLease object
+func NewDhcpLease() *DhcpLease {
+	return &DhcpLease{
+		Ignore: false,
+	}
+}
+
+// DhcpLease DHCP lease data structure
 type DhcpLease struct {
 	Expiry    time.Time
 	Mac       string
@@ -16,12 +24,6 @@ type DhcpLease struct {
 	Tag       string
 	LeaseTime string
 	Ignore    bool
-}
-
-func NewDhcpLease() *DhcpLease {
-	return &DhcpLease{
-		Ignore: false,
-	}
 }
 
 // ParseLease Parse DNSMASQ dhcp lease file format

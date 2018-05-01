@@ -1,7 +1,8 @@
-package models
+package db
 
 import (
 	"log"
+	"reflect"
 	"sync"
 	"time"
 
@@ -23,16 +24,11 @@ var (
 	// Db Database
 	Db *gorm.DB
 
+	tablesToAutoClean = make([]interface{}, 0)
+
 	insertMutx sync.Mutex
 	updateMutx sync.Mutex
 	deleteMutx sync.Mutex
-
-	tables = []interface{}{
-		DnsmasqLog{},
-	}
-	tablesToAutoClean = []interface{}{
-		DnsmasqLog{},
-	}
 
 	insertBuffer = make([]interface{}, 0)
 	updateBuffer = make([]interface{}, 0)
@@ -51,10 +47,14 @@ func InitDB() {
 		log.Fatalln(err)
 	}
 
+	// PRAGMA configs
 	Db.Exec("PRAGMA auto_vacuum=FULL;")
 
-	initDataModel()
+	// DB Configuration
+	Db.DB().SetMaxIdleConns(5)
+	Db.DB().SetMaxOpenConns(25)
 
+	// Init background services
 	go insertService()
 	go updateService()
 	go deleteService()
@@ -62,22 +62,26 @@ func InitDB() {
 	go startDbCleaningService()
 }
 
-func initDataModel() {
-	// init Dnsmasq Table
-	if Db.HasTable(&DnsmasqLog{}) {
-		Db.DropTableIfExists(&DnsmasqLog{})
+// InitDataModel Initialize table
+func InitDataModel(model interface{}) {
+	t := reflect.TypeOf(model)
+
+	if !Db.HasTable(model) {
+		Db.CreateTable(model)
+		log.Printf("[%s] Create table", t.Name())
 	}
-	if !Db.HasTable(&DnsmasqLog{}) {
-		Db.CreateTable(&DnsmasqLog{})
-	}
-	// Auto migrate schema
-	Db.AutoMigrate(&DnsmasqLog{})
+	Db.AutoMigrate(model)
 
 	if Db.Error != nil {
 		log.Fatalln(Db.Error)
 	}
+	log.Printf("[%s] Init of data model done", t.Name())
+}
 
-	// init other tables below ...
+// AutoCleanTable Add table to autoclean list
+func AutoCleanTable(model interface{}) {
+	tablesToAutoClean = append(tablesToAutoClean, model)
+	log.Printf("[%s] Added table to auto clean", reflect.TypeOf(model).Name())
 }
 
 // Insert insert data
@@ -98,17 +102,19 @@ func insert() {
 	insertMutx.Unlock()
 
 	for _, item := range buffer {
-		if tx.NewRecord(item) {
-			tx.Create(item)
-		}
+		// if tx.NewRecord(item) {
+		tx.Create(item)
+		// }
 	}
 	if tx.Error != nil {
+		log.Println(tx.Error)
 		tx.Rollback()
 	} else {
 		tx.Commit()
 	}
 
 	lastInsert = time.Now()
+	// log.Println("Insert data")
 }
 
 func insertService() {
@@ -131,7 +137,23 @@ func Update(data interface{}) {
 }
 
 func update() {
+	tx := Db.Begin()
+	insertMutx.Lock()
+	buffer := updateBuffer
+	insertBuffer = make([]interface{}, 0)
+	insertMutx.Unlock()
 
+	for _, item := range buffer {
+		tx.First(&item)
+		tx.Save(&item)
+	}
+
+	if tx.Error != nil {
+		tx.Rollback()
+	} else {
+		tx.Commit()
+	}
+	lastUpdate = time.Now()
 }
 
 func updateService() {

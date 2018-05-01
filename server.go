@@ -9,10 +9,7 @@ import (
 	"time"
 
 	"cm-cloud.fr/go-pihole/actions"
-	"cm-cloud.fr/go-pihole/configs"
-	"cm-cloud.fr/go-pihole/models"
-	"cm-cloud.fr/go-pihole/process"
-	"cm-cloud.fr/go-pihole/services"
+	"cm-cloud.fr/go-pihole/db"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -20,15 +17,16 @@ import (
 )
 
 func init() {
-	configs.InitConfig()
-	models.InitDB()
+	InitConfig()
 
-	services.StartLogReaderService()
+	db.InitDB()
+
+	StartLogReaderService()
 }
 
 func main() {
-	defer models.Db.Close()
-	defer process.ShutdownAll()
+	defer db.Db.Close()
+	defer ShutdownAll()
 
 	// Router
 	root := mux.NewRouter()

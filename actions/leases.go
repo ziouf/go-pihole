@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"cm-cloud.fr/go-pihole/models"
-	"cm-cloud.fr/go-pihole/utils"
+	"cm-cloud.fr/go-pihole/files"
+	"cm-cloud.fr/go-pihole/files/dnsmasq"
 	"github.com/spf13/viper"
 )
 
@@ -16,8 +16,8 @@ func AllLeases(w http.ResponseWriter, r *http.Request) {
 
 	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq-config-dir"), viper.GetString("dnsmasq-config-dhcp-leases"))
 
-	lines, err := utils.ReadFileLines(fileName, func(line string) interface{} {
-		lease := models.NewDhcpLease()
+	lines, err := files.ReadFileLines(fileName, func(line string) interface{} {
+		lease := dnsmasq.NewDhcpLease()
 		lease.ParseLease(line)
 		return lease
 	})
@@ -34,8 +34,8 @@ func AllReservedLeases(w http.ResponseWriter, r *http.Request) {
 	// TODO : implement
 	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq-config-dir"), viper.GetString("dnsmasq-config-dhcp-static-leases"))
 
-	lines, err := utils.ReadFileLines(fileName, func(line string) interface{} {
-		lease := models.NewDhcpLease()
+	lines, err := files.ReadFileLines(fileName, func(line string) interface{} {
+		lease := dnsmasq.NewDhcpLease()
 		lease.ParseStaticLease(line)
 		return lease
 	})
