@@ -10,18 +10,22 @@ import (
 
 // NewLog Contructor
 func NewLog() *Log {
-	return &Log{}
+	l := new(Log)
+	l.CreationDate = time.Now()
+	return l
 }
 
 // Log Data structure of DNSMASQ log line
 type Log struct {
-	Date     time.Time `gorm:"not null;index:idx_date_process"`
-	Process  string    `gorm:"not null;index:idx_date_process"`
-	PID      int       `gorm:"not null;"`
-	QID      int       `gorm:"not null;index:idx_qid"`
-	SourceIP string    `gorm:"not null;index:idx_source_ip"`
-	QType    string    `gorm:"not null;index:idx_qtype"`
-	Query    string    `gorm:"not null;"`
+	ID           int       `gorm:"primary_key;"`
+	CreationDate time.Time `gorm:"not null;"`
+	Date         time.Time `gorm:"not null;index:idx_date_process"`
+	Process      string    `gorm:"not null;index:idx_date_process"`
+	PID          int       `gorm:"not null;"`
+	QID          int       `gorm:"not null;index:idx_qid"`
+	SourceIP     string    `gorm:"not null;index:idx_source_ip"`
+	QType        string    `gorm:"not null;index:idx_qtype"`
+	Query        string    `gorm:"not null;"`
 }
 
 var logRegex = regexp.MustCompile(`^([A-Z][a-z]{2} [ 1-3][0-9] [ 0-2][0-9]:[0-6]?[0-9]:[0-6]?[0-9]) ([a-z-]+)\[([0-9]+)\]: (.*)$`)
@@ -34,15 +38,15 @@ func (l *Log) ParseLine(line string) *Log {
 		log.Fatalln("matches == 0 :", line)
 	}
 
-	l.Date, _ = time.Parse(time.Stamp, matches[0])
-	l.Process = matches[1]
-	l.PID, _ = strconv.Atoi(matches[2])
+	l.Date, _ = time.Parse(time.Stamp, matches[1])
+	l.Process = matches[2]
+	l.PID, _ = strconv.Atoi(matches[3])
 
 	switch l.Process {
 	case "dnsmasq":
-		l.parseQuery(matches[3])
+		l.parseQuery(matches[4])
 	case "dnsmasq-dhcp":
-		l.parseDhcpLog(matches[3])
+		l.parseDhcpLog(matches[4])
 	}
 
 	return l

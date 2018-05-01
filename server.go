@@ -36,8 +36,9 @@ func main() {
 
 	// Model querying
 	apiModel := apiRoot.PathPrefix("/model").Subrouter()
-	apiModel.HandleFunc("/logs", nil)     /* AllLogs */
-	apiModel.HandleFunc("/log/{id}", nil) /* OneLog */
+	apiModel.HandleFunc("/logs", db.LogsHandler)                  /* AllLogs */
+	apiModel.HandleFunc("/logs/last/{limit}", db.LogsLastHandler) /* AllLogs */
+	apiModel.HandleFunc("/log/{id}", db.LogHandler)               /* OneLog */
 	// Search
 	apiModel.HandleFunc("/find/logs/since/{date}", nil)          /* FindLogsSinceDate */
 	apiModel.HandleFunc("/find/logs/since/hour", nil)            /* FindLogsSinceAnHour */

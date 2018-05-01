@@ -102,9 +102,9 @@ func insert() {
 	insertMutx.Unlock()
 
 	for _, item := range buffer {
-		// if tx.NewRecord(item) {
-		tx.Create(item)
-		// }
+		if tx.NewRecord(item) {
+			tx.Create(item)
+		}
 	}
 	if tx.Error != nil {
 		log.Println(tx.Error)
