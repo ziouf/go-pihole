@@ -56,17 +56,17 @@ func (l *Log) parseQuery(s string) *Log {
 	tokens, size := strings.Split(s, " "), len(s)
 
 	if size >= 1 {
-		l.QID, _ = strconv.Atoi(tokens[1])
+		l.QID, _ = strconv.Atoi(tokens[0])
 	}
 	if l.QID > 0 {
 		if size >= 2 {
-			l.SourceIP = strings.Split(tokens[2], "/")[0]
+			l.SourceIP = strings.Split(tokens[1], "/")[0]
 		}
 		if size >= 3 {
-			l.QType = tokens[3]
+			l.QType = tokens[2]
 		}
 		if size >= 4 {
-			l.Query = strings.Join(tokens[4:], " ")
+			l.Query = strings.Join(tokens[3:], " ")
 		}
 	}
 
@@ -74,29 +74,8 @@ func (l *Log) parseQuery(s string) *Log {
 }
 
 func (l *Log) parseDhcpLog(s string) *Log {
-	// tokens, size := strings.Split(s, " "), len(s)
+
+	l.Query = s
 
 	return l
-}
-
-func isQuery(s string) bool {
-	prefixes := []string{
-		"query[",
-		"cached",
-		"forwarded",
-		"validation",
-		"config",
-		"reply",
-		"DHCP",
-	}
-
-	var result = false
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(s, prefix) {
-			result = true
-		}
-	}
-
-	return result
 }
