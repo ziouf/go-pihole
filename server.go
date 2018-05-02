@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,23 +11,56 @@ import (
 
 	"cm-cloud.fr/go-pihole/actions"
 	"cm-cloud.fr/go-pihole/db"
+	"cm-cloud.fr/go-pihole/files/dnsmasq"
+	"cm-cloud.fr/go-pihole/process"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/hpcloud/tail"
 	"github.com/spf13/viper"
 )
 
+var (
+	logTail        *tail.Tail
+	dnsmasqProcess *process.Process
+)
+
 func init() {
-	InitConfig()
+	// Initialize application configurations
+	// Load configuration files
+	// Parse invocation flags
+	// Parse environment variables
+	initConfig()
 
+	// Init embeded database
 	db.InitDB()
+	db.InitDbServices()
 
-	StartLogReaderService()
+	// Init dnsmasq log reader
+	startLogReaderService()
+
+	// Init dnsmasq process
+	dnsmasqProcess = process.NewProcess(viper.GetString("dnsmasq.bin"),
+		// `-u`, `dnsmasq`,
+		// `-x`, viper.GetString(`dnsmasq.pid.file`),
+		`-d`, `-k`, // No daemon
+		`-C`, viper.GetString(`dnsmasq.config.file`),
+		`-7`, fmt.Sprintf("%s,.dpkg-dist,.dpkg-old,.dpkg-new,.log,.sh", viper.GetString(`dnsmasq.config.dir`)),
+		`-8`, viper.GetString(`dnsmasq.log.file`),
+		// `-r`, fmt.Sprintf("%s/%s", viper.GetString(`dnsmasq.config.dir`), viper.GetString(`dnsmasq.config.resolv`)),
+		// `--local-service`,
+		// http://data.iana.org/root-anchors/root-anchors.xml
+		`--trust-anchor=.,19036,8,2,49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5`,
+		`--trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D`,
+	)
+	if err := dnsmasqProcess.Start(); err != nil {
+		log.Fatalf("Error while starting DNSMASQ process : %s", err)
+	}
 }
 
 func main() {
 	defer db.Db.Close()
-	defer ShutdownAll()
+	defer process.ShutdownAll()
 
 	// Router
 	root := mux.NewRouter()
@@ -91,4 +125,23 @@ func main() {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	srv.Shutdown(ctx)
 	log.Println("Server gracefully stopped")
+}
+
+func startLogReaderService() {
+	db.InitDataModel(dnsmasq.Log{})
+	db.AutoCleanTable(dnsmasq.Log{})
+	go logReaderService()
+}
+
+func logReaderService() {
+	file := viper.GetString("dnsmasq.log.file")
+	if logTail, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
+
+		for line := range logTail.Lines {
+			db.Insert(dnsmasq.NewLog().ParseLine(line.Text))
+		}
+
+	} else {
+		log.Printf("Error while tailing file %s : %s", file, err)
+	}
 }

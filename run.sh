@@ -31,17 +31,26 @@ fn_build() {
     go build
 }
 
+fn_test() {
+    echo "========================="
+    echo "Run go tests"
+    go test cm-cloud.fr/go-pihole/...
+}
+
 fn_run() {
     echo "========================="
     echo "Starting go server"
-    go run *.go --dnsmasq-config-dir $(pwd)/tmp --dnsmasq-log-file $(pwd)/tmp/pihole.log
+    go run ${DIR}/*.go \
+    --dnsmasq.config.dir $(pwd)/tmp \
+    --dnsmasq.log.file $(pwd)/tmp/pihole.log \
+    --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq
 }
 
 fn_install() {
     echo "========================="
     echo "Installing application on system"
 
-
+    # TODO : Add install scripts 
 
 }
 
@@ -53,20 +62,18 @@ case $1 in
     dep)
         fn_dep
     ;;
+    test)
+        fn_test
+    ;;
     build)
+        fn_test
         fn_build
     ;;
     run)
+        fn_test
         fn_run
     ;;
     *)
         fn_usage
     ;;
 esac
-
-
-# cd ${DIR}/ui
-
-# npm run-script build
-
-# cd ${DIR}

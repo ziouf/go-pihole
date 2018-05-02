@@ -28,6 +28,7 @@ func LogsLastHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+// LogSinceDateHandler Handle logs since date
 func LogSinceDateHandler(w http.ResponseWriter, r *http.Request) {
 	var result []dnsmasq.Log
 	vars := mux.Vars(r)

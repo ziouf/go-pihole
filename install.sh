@@ -2,7 +2,7 @@
 
 # Install prerequisites
 sudo apt update
-sudo apt install -y build-essential nettle-dev libidn11-dev libdbus-1-dev libnetfilter-conntrack-dev
+sudo apt install -y build-essential nettle-dev libidn11-dev libdbus-1-dev libnetfilter-conntrack-dev gettext
 # Clone DNSMASQ sources
 git clone http://thekelleys.org.uk/git/dnsmasq.git /usr/lib/dnsmasq
 # Build DNSMASQ

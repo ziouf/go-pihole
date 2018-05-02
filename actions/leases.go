@@ -14,7 +14,7 @@ import (
 // AllLeases return all DHCP leases
 func AllLeases(w http.ResponseWriter, r *http.Request) {
 
-	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq-config-dir"), viper.GetString("dnsmasq-config-dhcp-leases"))
+	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq.config.dir"), viper.GetString("dnsmasq.config.dhcp.leases"))
 
 	lines, err := files.ReadFileLines(fileName, func(line string) interface{} {
 		lease := dnsmasq.NewDhcpLease()
@@ -32,7 +32,7 @@ func AllLeases(w http.ResponseWriter, r *http.Request) {
 // AllReservedLeases return all DHCP reserved leases from DNSMASQ config file
 func AllReservedLeases(w http.ResponseWriter, r *http.Request) {
 	// TODO : implement
-	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq-config-dir"), viper.GetString("dnsmasq-config-dhcp-static-leases"))
+	fileName := fmt.Sprintf("%s/%s", viper.GetString("dnsmasq.config.dir"), viper.GetString("dnsmasq.config.dhcp.static.leases"))
 
 	lines, err := files.ReadFileLines(fileName, func(line string) interface{} {
 		lease := dnsmasq.NewDhcpLease()

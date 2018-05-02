@@ -12,13 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	bulkSize     = 5000
-	bulkFreq     = 1 * time.Second
-	serviceFreq  = 50 * time.Millisecond
-	cleaningFreq = 15 * time.Second
-	day          = 24 * time.Hour
-)
+const serviceFreq = 1 * time.Millisecond
 
 var (
 	// Db Database
@@ -43,17 +37,25 @@ var (
 func InitDB() {
 	var err error
 
-	if Db, err = gorm.Open("sqlite3", viper.GetString("db_file")); err != nil {
-		log.Fatalln(err)
+	if Db == nil {
+		if Db, err = gorm.Open("sqlite3", viper.GetString("db_file")); err != nil {
+			log.Fatalln(err)
+		}
 	}
+
+	// Debug config
+	// Db.LogMode(true)
 
 	// PRAGMA configs
 	Db.Exec("PRAGMA auto_vacuum=FULL;")
 
 	// DB Configuration
-	Db.DB().SetMaxIdleConns(5)
-	Db.DB().SetMaxOpenConns(25)
+	Db.DB().SetMaxIdleConns(1)
+	Db.DB().SetMaxOpenConns(1)
 
+}
+
+func InitDbServices() {
 	// Init background services
 	go insertService()
 	go updateService()
@@ -89,7 +91,7 @@ func Insert(data interface{}) {
 	insertMutx.Lock()
 	insertBuffer = append(insertBuffer, data)
 	insertMutx.Unlock()
-	if len(insertBuffer) >= bulkSize {
+	if len(insertBuffer) >= viper.GetInt("db.bulk.size") {
 		insert()
 	}
 }
@@ -119,7 +121,7 @@ func insert() {
 
 func insertService() {
 	for {
-		if time.Now().Sub(lastInsert) >= bulkFreq {
+		if time.Now().Sub(lastInsert) >= viper.GetDuration("db.bulk.freq")*time.Second {
 			insert()
 		}
 		time.Sleep(serviceFreq)
@@ -131,7 +133,7 @@ func Update(data interface{}) {
 	updateMutx.Lock()
 	updateBuffer = append(updateBuffer, data)
 	updateMutx.Unlock()
-	if len(updateBuffer) >= bulkSize {
+	if len(updateBuffer) >= viper.GetInt("db.bulk.size") {
 		update()
 	}
 }
@@ -158,7 +160,7 @@ func update() {
 
 func updateService() {
 	for {
-		if time.Now().Sub(lastUpdate) >= bulkFreq {
+		if time.Now().Sub(lastUpdate) >= viper.GetDuration("db.bulk.freq")*time.Second {
 			update()
 		}
 		time.Sleep(serviceFreq)
@@ -170,7 +172,7 @@ func Delete(data interface{}) {
 	deleteMutx.Lock()
 	deleteBuffer = append(deleteBuffer, data)
 	deleteMutx.Unlock()
-	if len(deleteBuffer) >= bulkSize {
+	if len(deleteBuffer) >= viper.GetInt("db.bulk.size") {
 		delete()
 	}
 }
@@ -181,7 +183,7 @@ func delete() {
 
 func deleteService() {
 	for {
-		if time.Now().Sub(lastDelete) >= bulkFreq {
+		if time.Now().Sub(lastDelete) >= viper.GetDuration("db.bulk.freq")*time.Second {
 			delete()
 		}
 		time.Sleep(serviceFreq)
@@ -189,21 +191,26 @@ func deleteService() {
 }
 
 func startDbCleaningService() {
-	time.Sleep(cleaningFreq)
+	time.Sleep(viper.GetDuration("db.cleaning.freq") * time.Second)
 	for {
-		for _, t := range tablesToAutoClean {
-			tx := Db.Begin()
+		cleanDb()
 
-			tx.Delete(t, "date < ?", time.Now().Add(-1*day*7))
+		time.Sleep(viper.GetDuration("db.cleaning.freq") * time.Second)
+	}
+}
 
-			if tx.Error != nil {
-				log.Println(tx.Error)
-				tx.Rollback()
-			} else {
-				tx.Commit()
-			}
+func cleanDb() {
+	for _, t := range tablesToAutoClean {
+		tx := Db.Begin()
+
+		tx.Unscoped().Delete(t, "date < ?", time.Now().Add(-1*time.Hour*24*7))
+
+		if tx.Error != nil {
+			log.Println(tx.Error)
+			tx.Rollback()
+		} else {
+			// log.Println("Cleaning db")
+			tx.Commit()
 		}
-
-		time.Sleep(cleaningFreq)
 	}
 }
