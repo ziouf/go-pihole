@@ -40,10 +40,12 @@ fn_test() {
 fn_run() {
     echo "========================="
     echo "Starting go server"
-    go run ${DIR}/*.go \
-    --dnsmasq.config.dir $(pwd)/tmp \
-    --dnsmasq.log.file $(pwd)/tmp/pihole.log \
-    --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq
+    go run ${DIR}/*.go                          \
+    --dnsmasq.config.dir $(pwd)/tmp             \
+    --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
+    --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
+    --db.file $(pwd)/go-pihole.sqlite           \
+    --dnsmasq.embeded
 }
 
 fn_install() {

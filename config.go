@@ -28,6 +28,7 @@ func setDefaults() {
 	viper.SetDefault(`db.cleaning.freq`, 1)
 
 	// DNMASQ
+	viper.SetDefault(`dnsmasq.embeded`, false)
 	viper.SetDefault(`dnsmasq.pid.file`, `/run/dnsmasq/dnsmasq.pid`)
 	viper.SetDefault(`dnsmasq.log.file`, `/var/log/dnsmasq.log`)
 	// viper.SetDefault(`dnsmasq-gravity-file`, `/etc/pihole/gravity.list`)
@@ -51,11 +52,13 @@ func setDefaults() {
 func parseFlags() {
 	// Define flags
 	flag.String(`bind`, viper.GetString(`bind`), `IP:Port to bind HTTP server on`)
+	flag.String(`db.file`, viper.GetString(`db.file`), `Sqlite3 database file`)
 	flag.String(`dhcp.leases.file`, viper.GetString(`dnsmasq.dhcp.lease.file`), `DHCP leases file`)
 	flag.String(`dnsmasq.log.file`, viper.GetString(`dnsmasq.log.file`), `Dnsmasq log file`)
 	flag.String(`dnsmasq.config.dir`, viper.GetString(`dnsmasq.config.dir`), `Dnsmasq configuration files directory`)
 	flag.String(`dnsmasq.config.file`, viper.GetString(`dnsmasq.config.file`), `Dnsmasq configuration files directory`)
 	flag.String(`dnsmasq.bin`, viper.GetString(`dnsmasq.bin`), `Dnsmasq configuration files directory`)
+	flag.Bool(`dnsmasq.embeded`, viper.GetBool(`dnsmasq.embeded`), `Use embeded dnsmasq`)
 
 	// Parse flags
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)

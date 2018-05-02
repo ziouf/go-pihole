@@ -37,10 +37,8 @@ var (
 func InitDB() {
 	var err error
 
-	if Db == nil {
-		if Db, err = gorm.Open("sqlite3", viper.GetString("db_file")); err != nil {
-			log.Fatalln(err)
-		}
+	if Db, err = gorm.Open("sqlite3", viper.GetString("db.file")); err != nil {
+		log.Fatalln(err)
 	}
 
 	// Debug config
@@ -55,6 +53,7 @@ func InitDB() {
 
 }
 
+// InitDbServices Init services
 func InitDbServices() {
 	// Init background services
 	go insertService()
