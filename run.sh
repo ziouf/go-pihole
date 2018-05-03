@@ -45,7 +45,7 @@ fn_run() {
     --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
     --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
     --db.file $(pwd)/go-pihole.sqlite           \
-    --dnsmasq.embeded
+    # --dnsmasq.embeded
 }
 
 fn_install() {

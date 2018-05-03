@@ -23,7 +23,7 @@ func LogsLastHandler(w http.ResponseWriter, r *http.Request) {
 	var result []dnsmasq.Log
 	vars := mux.Vars(r)
 
-	Db.Limit(vars["limit"]).Order("id desc").Find(&result)
+	Db.Limit(vars[`limit`]).Order("id desc").Find(&result)
 
 	json.NewEncoder(w).Encode(result)
 }

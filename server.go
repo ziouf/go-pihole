@@ -36,8 +36,11 @@ func init() {
 	db.InitDB()
 	db.InitDbServices()
 
+	db.InitDataModel(dnsmasq.Log{})
+	db.AutoCleanTable(dnsmasq.Log{})
+
 	// Init dnsmasq log reader
-	startLogReaderService()
+	go logReaderService()
 
 	// Init dnsmasq process
 	if viper.GetBool(`dnsmasq.embeded`) {
@@ -125,12 +128,6 @@ func main() {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	srv.Shutdown(ctx)
 	log.Println("Server gracefully stopped")
-}
-
-func startLogReaderService() {
-	db.InitDataModel(dnsmasq.Log{})
-	db.AutoCleanTable(dnsmasq.Log{})
-	go logReaderService()
 }
 
 func logReaderService() {

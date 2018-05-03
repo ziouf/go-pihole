@@ -46,6 +46,7 @@ func InitDB() {
 
 	// PRAGMA configs
 	Db.Exec("PRAGMA auto_vacuum=FULL;")
+	Db.Exec("PRAGMA foreign_keys=ON;")
 
 	// DB Configuration
 	Db.DB().SetMaxIdleConns(1)
