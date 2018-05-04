@@ -33,6 +33,7 @@ func init() {
 	initConfig()
 
 	// Init embeded database
+	bdd.Init()
 	bdd.Open()
 	bdd.AddToClean(&dnsmasq.Log{})
 	// go bdd.CleanService(viper.GetDuration(`db.cleaning.freq`)*time.Second, viper.GetDuration(`db.cleaning.days.to.keep`))

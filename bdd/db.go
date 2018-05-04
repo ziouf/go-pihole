@@ -14,8 +14,8 @@ import (
 )
 
 var db *bolt.DB
-var inserts = buffer{timer: time.NewTicker(time.Second * viper.GetDuration(`db.bulk.freq`))}
-var cleaner = clean{timer: time.NewTicker(time.Second * viper.GetDuration(`db.cleaning.freq`))}
+var inserts *buffer
+var cleaner *clean
 
 type buffer struct {
 	mtx    sync.Mutex
@@ -28,10 +28,16 @@ type clean struct {
 	timer   *time.Ticker
 }
 
+// Init database
+func Init() {
+	inserts = &buffer{timer: time.NewTicker(time.Second * viper.GetDuration("db.bulk.freq"))}
+	cleaner = &clean{timer: time.NewTicker(time.Second * viper.GetDuration("db.cleaning.freq"))}
+}
+
 // Open and Init db
 func Open() {
 	var err error
-	dbFile, dbFileMode := viper.GetString(`db.file`), viper.GetInt(`db.file.mode`)
+	dbFile, dbFileMode := viper.GetString("db.file.path"), viper.GetInt("db.file.mode")
 	options := bolt.Options{ReadOnly: false}
 	db, err = bolt.Open(dbFile, os.FileMode(dbFileMode), &options)
 	if err != nil {
@@ -61,7 +67,7 @@ func Insert(m Encodable) {
 	inserts.buffer = append(inserts.buffer, m)
 	inserts.mtx.Unlock()
 
-	if len(inserts.buffer) >= viper.GetInt(`db.bulk.size`) {
+	if len(inserts.buffer) >= viper.GetInt("db.bulk.size") {
 		insertBuffer()
 	}
 }
@@ -116,7 +122,7 @@ func cleaning() error {
 		for _, b := range cleaner.buckets {
 			bucket := tx.Bucket([]byte(b))
 			c := bucket.Cursor()
-			days := viper.GetDuration(`db.cleaning.days.to.keep`)
+			days := viper.GetDuration("db.cleaning.days.to.keep")
 			stamp := []byte(time.Now().Add(-1 * time.Hour * 24 * days).Format(time.RFC3339))
 
 			for k, _ := c.First(); k != nil && bytes.Compare(k, stamp) <= 0; k, _ = c.Next() {
