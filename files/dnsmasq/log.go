@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cm-cloud.fr/go-pihole/bdd"
 )
 
 // NewLog Contructor
@@ -13,17 +15,15 @@ func NewLog() *Log {
 	return new(Log)
 }
 
-type Model struct {
-	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-}
-
 // Log Data structure of DNSMASQ log line
 type Log struct {
-	Model
-	Date    time.Time `gorm:"not null;index:idx_date_process;"`
-	Process string    `gorm:"not null;index:idx_date_process;"`
-	PID     int       `gorm:"not null;"`
+	bdd.Model
+
+	// ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	Date      time.Time `gorm:"not null;index:idx_date_process;"`
+	Process   string    `gorm:"not null;index:idx_date_process;"`
+	PID       int       `gorm:"not null;"`
 
 	DnsQID     int
 	DnsFrom    string
@@ -54,6 +54,7 @@ func (l *Log) ParseLine(line string) *Log {
 	}
 
 	l.Date, _ = time.Parse(time.Stamp, matches[1])
+	l.Stamp = l.Date
 	l.Process = matches[2]
 	l.PID, _ = strconv.Atoi(matches[3])
 
@@ -74,7 +75,7 @@ func (l *Log) ParseLine(line string) *Log {
 func (l *Log) parseDNSLog(s string) *Log {
 	tokens := strings.Split(s, " ")
 	size := len(tokens)
-	
+
 	if size >= 1 {
 		l.DnsQID, _ = strconv.Atoi(tokens[0])
 	}

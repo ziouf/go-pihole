@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"cm-cloud.fr/go-pihole/actions"
-	"cm-cloud.fr/go-pihole/db"
+	"cm-cloud.fr/go-pihole/bdd"
 	"cm-cloud.fr/go-pihole/files/dnsmasq"
 	"cm-cloud.fr/go-pihole/process"
 
@@ -33,11 +33,9 @@ func init() {
 	initConfig()
 
 	// Init embeded database
-	db.InitDB()
-	db.InitDbServices()
-
-	db.InitDataModel(dnsmasq.Log{})
-	db.AutoCleanTable(dnsmasq.Log{})
+	bdd.Open()
+	bdd.AddToClean(&dnsmasq.Log{})
+	// go bdd.CleanService(viper.GetDuration(`db.cleaning.freq`)*time.Second, viper.GetDuration(`db.cleaning.days.to.keep`))
 
 	// Init dnsmasq log reader
 	go logReaderService()
@@ -62,7 +60,7 @@ func init() {
 }
 
 func main() {
-	defer db.Db.Close()
+	defer bdd.Close()
 	defer process.ShutdownAll()
 
 	// Router
@@ -73,9 +71,9 @@ func main() {
 
 	// Model querying
 	apiModel := apiRoot.PathPrefix("/model").Subrouter()
-	apiModel.HandleFunc("/logs", db.LogsHandler)                  /* AllLogs */
-	apiModel.HandleFunc("/logs/last/{limit}", db.LogsLastHandler) /* AllLogs */
-	apiModel.HandleFunc("/log/{id}", db.LogHandler)               /* OneLog */
+	apiModel.HandleFunc("/logs", nil)              /* AllLogs */
+	apiModel.HandleFunc("/logs/last/{limit}", nil) /* AllLogs */
+	apiModel.HandleFunc("/log/{id}", nil)          /* OneLog */
 	// Search
 	apiModel.HandleFunc("/find/logs/since/{date}", nil)          /* FindLogsSinceDate */
 	apiModel.HandleFunc("/find/logs/since/hour", nil)            /* FindLogsSinceAnHour */
@@ -135,7 +133,7 @@ func logReaderService() {
 	if logTail, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
 
 		for line := range logTail.Lines {
-			db.Insert(dnsmasq.NewLog().ParseLine(line.Text))
+			bdd.Insert(dnsmasq.NewLog().ParseLine(line.Text))
 		}
 
 	} else {

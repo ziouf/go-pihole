@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path"
+	"runtime"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,15 +19,17 @@ func initConfig() {
 
 func setDefaults() {
 	// Application
-	viper.SetDefault(`application.name`, `go-pihole`)
+	viper.SetDefault(`app.name`, `go-pihole`)
 	viper.SetDefault(`bind`, `:8080`)
 
 	// SQlite
-	// viper.SetDefault(`db.file`, fmt.Sprintf("/var/lib/%[1]s/%[1]s.sqlite", viper.GetString(`application-name`)))
-	viper.SetDefault(`db.file`, fmt.Sprintf("./%[1]s.sqlite", viper.GetString(`application.name`)))
+	_, filename, _, _ := runtime.Caller(0)
+	viper.SetDefault(`db.file`, path.Join(path.Dir(filename), fmt.Sprintf(`%s.db`, viper.GetString(`app.name`))))
+	viper.SetDefault(`db.file.mode`, 0600)
 	viper.SetDefault(`db.bulk.size`, 2500)
 	viper.SetDefault(`db.bulk.freq`, 1)
 	viper.SetDefault(`db.cleaning.freq`, 1)
+	viper.SetDefault(`db.cleaning.days.to.keep`, 7)
 
 	// DNMASQ
 	viper.SetDefault(`dnsmasq.embeded`, false)
@@ -52,7 +56,6 @@ func setDefaults() {
 func parseFlags() {
 	// Define flags
 	flag.String(`bind`, viper.GetString(`bind`), `IP:Port to bind HTTP server on`)
-	flag.String(`db.file`, viper.GetString(`db.file`), `Sqlite3 database file`)
 	flag.String(`dhcp.leases.file`, viper.GetString(`dnsmasq.dhcp.lease.file`), `DHCP leases file`)
 	flag.String(`dnsmasq.log.file`, viper.GetString(`dnsmasq.log.file`), `Dnsmasq log file`)
 	flag.String(`dnsmasq.config.dir`, viper.GetString(`dnsmasq.config.dir`), `Dnsmasq configuration files directory`)
