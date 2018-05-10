@@ -18,7 +18,9 @@ func ReadFileLines(fileName string, fn func(string) interface{}) ([]interface{},
 		scanner := bufio.NewScanner(f)
 
 		for scanner.Scan() {
-			result = append(result, fn(scanner.Text()))
+			if line := fn(scanner.Text()); line != nil {
+				result = append(result, line)
+			}
 		}
 
 	} else {
