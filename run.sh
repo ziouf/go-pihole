@@ -7,13 +7,13 @@ fn_dep() {
     echo "Update depecendies"
 
     # dep ensure
-    # dep ensure -update
+    dep ensure -update 
 
-    go get -u github.com/gorilla/handlers
-    go get -u github.com/gorilla/mux
-    go get -u github.com/hpcloud/tail
-    go get -u github.com/spf13/viper
-    go get -u github.com/jinzhu/gorm/...
+    # go get -u github.com/gorilla/handlers
+    # go get -u github.com/gorilla/mux
+    # go get -u github.com/hpcloud/tail
+    # go get -u github.com/spf13/viper
+    # go get -u github.com/boltdb/bolt
 }
 
 fn_build() {

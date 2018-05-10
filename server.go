@@ -11,7 +11,7 @@ import (
 
 	"cm-cloud.fr/go-pihole/actions"
 	"cm-cloud.fr/go-pihole/bdd"
-	"cm-cloud.fr/go-pihole/files/dnsmasq"
+	"cm-cloud.fr/go-pihole/parser"
 	"cm-cloud.fr/go-pihole/process"
 
 	"github.com/gorilla/handlers"
@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	logTail        *tail.Tail
-	dnsmasqProcess *process.Process
+	logTail *tail.Tail
+
+	processMap = make(map[string]*process.Process)
 )
 
 func init() {
@@ -35,15 +36,13 @@ func init() {
 	// Init embeded database
 	bdd.Init()
 	bdd.Open()
-	bdd.AddToClean(&dnsmasq.Log{})
-	// go bdd.CleanService(viper.GetDuration(`db.cleaning.freq`)*time.Second, viper.GetDuration(`db.cleaning.days.to.keep`))
 
 	// Init dnsmasq log reader
 	go logReaderService()
 
 	// Init dnsmasq process
 	if viper.GetBool(`dnsmasq.embeded`) {
-		dnsmasqProcess = process.NewProcess(viper.GetString("dnsmasq.bin"),
+		processMap[`dnsmasq`] = process.NewProcess(viper.GetString("dnsmasq.bin"),
 			`-d`, `-k`, // No daemon
 			`-C`, viper.GetString(`dnsmasq.config.file`),
 			`-7`, fmt.Sprintf("%s,.dpkg-dist,.dpkg-old,.dpkg-new,.log,.sh,README", viper.GetString(`dnsmasq.config.dir`)),
@@ -53,7 +52,7 @@ func init() {
 			`--trust-anchor=.,19036,8,2,49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5`,
 			`--trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D`,
 		)
-		if err := dnsmasqProcess.Start(); err != nil {
+		if err := processMap[`dnsmasq`].Start(); err != nil {
 			log.Fatalf("Error while starting DNSMASQ process : %s", err)
 		}
 	}
@@ -72,23 +71,15 @@ func main() {
 
 	// Model querying
 	apiModel := apiRoot.PathPrefix("/model").Subrouter()
-	apiModel.HandleFunc("/logs", nil)              /* AllLogs */
-	apiModel.HandleFunc("/logs/last/{limit}", nil) /* AllLogs */
-	apiModel.HandleFunc("/log/{id}", nil)          /* OneLog */
+
+	// Get
+	apiModel.HandleFunc(`/logs/dns/last`, LastDNSHandler)
+	apiModel.HandleFunc(`/logs/dhcp/last`, LastDHCPHandler)
 	// Search
-	apiModel.HandleFunc("/find/logs/since/{date}", nil)          /* FindLogsSinceDate */
-	apiModel.HandleFunc("/find/logs/since/hour", nil)            /* FindLogsSinceAnHour */
-	apiModel.HandleFunc("/find/logs/since/hour/{hours}", nil)    /* FindLogsSinceHours */
-	apiModel.HandleFunc("/find/logs/since/day", nil)             /* FindLogsSinceADay */
-	apiModel.HandleFunc("/find/logs/since/day/{days}", nil)      /* FindLogsSinceDays */
-	apiModel.HandleFunc("/find/logs/between/{start}/{end}", nil) /* FindLogsBetweenDates */
+	apiModel.HandleFunc(`/find/logs/dns/since/{date}`, nil)  /* FindLogsSinceDate */
+	apiModel.HandleFunc(`/find/logs/dhcp/since/{date}`, nil) /* FindLogsSinceDate */
 	// Stats
-	apiModel.HandleFunc("/stats/logs/count/type/since/{date}", nil)            /*  */
-	apiModel.HandleFunc("/stats/logs/count/type/between/{start}/{end}", nil)   /*  */
-	apiModel.HandleFunc("/stats/logs/count/client/since/{date}", nil)          /*  */
-	apiModel.HandleFunc("/stats/logs/count/client/between/{start}/{end}", nil) /*  */
-	apiModel.HandleFunc("/stats/logs/count/qtype/since/{date}", nil)           /*  */
-	apiModel.HandleFunc("/stats/logs/count/qtype/between/{start}/{end}", nil)  /*  */
+	apiModel.HandleFunc(`/search/`, nil)
 
 	// DHCP
 	apiDhcp := apiRoot.PathPrefix("/dhcp").Subrouter()
@@ -98,7 +89,13 @@ func main() {
 
 	// Contrôler actions
 	apiAction := apiRoot.PathPrefix("/action").Subrouter()
-	apiAction.HandleFunc("/dnsmasq/restart", nil) /*  */
+	// Actions on processes
+	apiAction.HandleFunc("/process/{process}/{action:start|stop|restart}", processActionHandler) /*  */
+
+	// Configuration
+	apiConfig := apiRoot.PathPrefix(`/config`).Subrouter()
+	// Update configuration values
+	apiConfig.HandleFunc(``, nil)
 
 	// Static content route
 	root.PathPrefix("/").Handler(http.FileServer(http.Dir("./ui/dist/")))
@@ -134,7 +131,7 @@ func logReaderService() {
 	if logTail, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
 
 		for line := range logTail.Lines {
-			bdd.Insert(dnsmasq.NewLog().ParseLine(line.Text))
+			bdd.Insert(parser.LogParser.ParseLine(line.Text))
 		}
 
 	} else {

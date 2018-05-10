@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"runtime"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -27,9 +28,9 @@ func setDefaults() {
 	viper.SetDefault("db.file.path", path.Join(path.Dir(filename), fmt.Sprintf("%s.db", viper.GetString("app.name"))))
 	viper.SetDefault("db.file.mode", 0600)
 	viper.SetDefault("db.bulk.size", 2500)
-	viper.SetDefault("db.bulk.freq", 1)
-	viper.SetDefault("db.cleaning.freq", 1)
-	viper.SetDefault("db.cleaning.days.to.keep", 7)
+	viper.SetDefault("db.bulk.freq", 250*time.Millisecond)
+	viper.SetDefault("db.cleaning.freq", 250*time.Millisecond)
+	viper.SetDefault("db.cleaning.keep", 7*time.Hour*24)
 
 	// DNMASQ
 	viper.SetDefault("dnsmasq.embeded", false)
