@@ -7,7 +7,7 @@ fn_dep() {
     echo "Update depecendies"
 
     # dep ensure
-    dep ensure -update 
+    dep ensure -update -v
 
     # go get -u github.com/gorilla/handlers
     # go get -u github.com/gorilla/mux
@@ -41,9 +41,10 @@ fn_run() {
     echo "========================="
     echo "Starting go server"
     go run ${DIR}/*.go                          \
+    --db.cleaning.enable                        \
     --dnsmasq.config.dir $(pwd)/tmp             \
     --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
-    --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
+    # --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
     # --db.file $(pwd)/go-pihole.db           \
     # --dnsmasq.embeded
 }

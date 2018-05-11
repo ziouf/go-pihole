@@ -88,6 +88,10 @@ func insertService() {
 
 // Cleaning
 func cleaning() error {
+	if !viper.GetBool(`db.cleaning.enable`) {
+		return fmt.Errorf(`Db cleaning service is disabled`)
+	}
+
 	if db == nil {
 		return fmt.Errorf("Db is not open")
 	}

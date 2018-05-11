@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"cm-cloud.fr/go-pihole/actions"
 	"cm-cloud.fr/go-pihole/bdd"
+	"cm-cloud.fr/go-pihole/config"
 	"cm-cloud.fr/go-pihole/parser"
 	"cm-cloud.fr/go-pihole/process"
 
@@ -22,8 +22,9 @@ import (
 
 var (
 	logTail *tail.Tail
+	srv     *http.Server
 
-	processMap = make(map[string]*process.Process)
+	stop = make(chan os.Signal, 1)
 )
 
 func init() {
@@ -31,38 +32,54 @@ func init() {
 	// Load configuration files
 	// Parse invocation flags
 	// Parse environment variables
-	initConfig()
+	config.Init()
 
 	// Init embeded database
 	bdd.Init()
+
+	// Init managed processes
+	process.Init()
+
+	// Init HTTP Server
+	srv = &http.Server{
+		Handler: handlers.LoggingHandler(os.Stdout, initRouter()),
+		Addr:    viper.GetString("bind"),
+		// Good practice to enforce timeouts
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+	}
+}
+
+func main() {
+	defer close(stop)
+
+	// Open DB
 	bdd.Open()
+	defer bdd.Close()
+
+	// Start managed processes
+	process.StartAll()
+	defer process.StopAll()
 
 	// Init dnsmasq log reader
 	go logReaderService()
 
-	// Init dnsmasq process
-	if viper.GetBool(`dnsmasq.embeded`) {
-		processMap[`dnsmasq`] = process.NewProcess(viper.GetString("dnsmasq.bin"),
-			`-d`, `-k`, // No daemon
-			`-C`, viper.GetString(`dnsmasq.config.file`),
-			`-7`, fmt.Sprintf("%s,.dpkg-dist,.dpkg-old,.dpkg-new,.log,.sh,README", viper.GetString(`dnsmasq.config.dir`)),
-			`-8`, viper.GetString(`dnsmasq.log.file`),
-			// `-r`, fmt.Sprintf("%s/%s", viper.GetString(`dnsmasq.config.dir`), viper.GetString(`dnsmasq.config.resolv`)),
-			// http://data.iana.org/root-anchors/root-anchors.xml
-			`--trust-anchor=.,19036,8,2,49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5`,
-			`--trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D`,
-		)
-		if err := processMap[`dnsmasq`].Start(); err != nil {
-			log.Fatalf("Error while starting DNSMASQ process : %s", err)
-		}
-	}
+	// Start HTTP Server
+	go httpServer()
 
+	// Clean shutdown
+	signal.Notify(stop, os.Interrupt)
+	<-stop
+
+	log.Println("Shutting down the server...")
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	srv.Shutdown(ctx)
+
+	log.Println("Server gracefully stopped")
 }
 
-func main() {
-	defer bdd.Close()
-	defer process.ShutdownAll()
-
+func initRouter() *mux.Router {
 	// Router
 	root := mux.NewRouter()
 
@@ -100,30 +117,7 @@ func main() {
 	// Static content route
 	root.PathPrefix("/").Handler(http.FileServer(http.Dir("./ui/dist/")))
 
-	// Http server
-	srv := &http.Server{
-		Handler: handlers.LoggingHandler(os.Stdout, root),
-		Addr:    viper.GetString("bind"),
-		// Good practice to enforce timeouts
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
-
-	go func() {
-		log.Println("Server started...")
-		log.Fatal(srv.ListenAndServe())
-	}()
-
-	stop := make(chan os.Signal, 1)
-	defer close(stop)
-
-	signal.Notify(stop, os.Interrupt)
-	<-stop
-
-	log.Println("Shutting down the server...")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	srv.Shutdown(ctx)
-	log.Println("Server gracefully stopped")
+	return root
 }
 
 func logReaderService() {
@@ -137,4 +131,8 @@ func logReaderService() {
 	} else {
 		log.Printf("Error while tailing file %s : %s", file, err)
 	}
+}
+
+func httpServer() {
+	log.Fatal(srv.ListenAndServe())
 }

@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"cm-cloud.fr/go-pihole/bdd"
+	"cm-cloud.fr/go-pihole/process"
+	"github.com/gorilla/mux"
 )
 
 // LastDNSHandler Finds the most recent DNS log entry
@@ -38,15 +38,13 @@ func LastDHCPHandler(w http.ResponseWriter, r *http.Request) {
 
 func processActionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if v, ok := processMap[vars[`process`]]; ok {
-		switch vars[`action`] {
-		case `start`:
-			v.Start()
-		case `stop`:
-			v.Stop()
-		case `restart`:
-			v.Restart()
-		default:
-		}
+	switch vars[`action`] {
+	case `start`:
+		process.Start(process.Key(vars[`process`]))
+	case `restart`:
+		process.Restart(process.Key(vars[`process`]))
+	case `stop`:
+		process.Stop(process.Key(vars[`process`]))
+	default:
 	}
 }
