@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Log
+// Log ...
 type Log struct {
 	Model
 
@@ -14,10 +14,13 @@ type Log struct {
 	PID     int
 }
 
-func (d *Log) Encode() ([]byte, []byte) {
-	key := []byte(d.Date.Format(time.Stamp))
+func (d *Log) Encode() []byte {
 	value, _ := json.Marshal(d)
-	return key, value
+	return value
+}
+
+func (d *Log) Decode(data []byte) error {
+	return json.Unmarshal(data, d)
 }
 
 func decode(name string, b []byte) *Log {

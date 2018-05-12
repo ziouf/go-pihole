@@ -1,7 +1,7 @@
 package bdd
 
 type Encodable interface {
-	Encode() ([]byte, []byte)
+	Encode() []byte
 }
 type Decodable interface {
 	Decode([]byte) error

@@ -14,10 +14,10 @@
   version = "v1.4.7"
 
 [[projects]]
-  name = "github.com/gobuffalo/uuid"
+  name = "github.com/google/uuid"
   packages = ["."]
-  revision = "3a9fb6c5c481d4886f1e9323c61ad743fb955860"
-  version = "v2.0.0"
+  revision = "064e2069ce9c359c118179501254f67d7d37ba24"
+  version = "0.2"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
 
 [[projects]]
   name = "github.com/pelletier/go-toml"
@@ -101,7 +101,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7dfd1290c7917b7ba22824b9d24954ab3002fe24"
+  revision = "d0faeb539838e250bd0a9db4182d48d4a1915181"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -131,6 +131,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "552e244c3cdf6ed8536830671aebe98a7770ea69222ac7fbc39248519e29b17d"
+  inputs-digest = "97b21408b09f68331ed097165ce0b041397b8e7dfd660c4d8f2e0560968d6aa6"
   solver-name = "gps-cdcl"
   solver-version = 1

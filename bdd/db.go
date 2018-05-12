@@ -20,6 +20,10 @@ func Open() {
 		log.Fatal(err)
 	}
 
+	// DB Config
+	db.MaxBatchSize = viper.GetInt("db.bulk.size")
+	db.MaxBatchDelay = viper.GetDuration("db.cleaning.freq")
+
 	// Insert goroutine
 	go insertService()
 

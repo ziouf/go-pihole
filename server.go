@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
 
 	"cm-cloud.fr/go-pihole/actions"
@@ -28,6 +29,8 @@ var (
 )
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// Initialize application configurations
 	// Load configuration files
 	// Parse invocation flags
@@ -90,13 +93,13 @@ func initRouter() *mux.Router {
 	apiModel := apiRoot.PathPrefix("/model").Subrouter()
 
 	// Get
-	apiModel.HandleFunc(`/logs/dns/last`, LastDNSHandler)
-	apiModel.HandleFunc(`/logs/dhcp/last`, LastDHCPHandler)
+	apiModel.HandleFunc(`/logs/dns/last`, lastDNSHandler)
+	apiModel.HandleFunc(`/logs/dhcp/last`, lastDHCPHandler)
 	// Search
 	apiModel.HandleFunc(`/find/logs/dns/since/{date}`, nil)  /* FindLogsSinceDate */
 	apiModel.HandleFunc(`/find/logs/dhcp/since/{date}`, nil) /* FindLogsSinceDate */
 	// Stats
-	apiModel.HandleFunc(`/search/`, nil)
+	apiModel.HandleFunc(`/stats/`, nil)
 
 	// DHCP
 	apiDhcp := apiRoot.PathPrefix("/dhcp").Subrouter()
@@ -124,8 +127,13 @@ func logReaderService() {
 	file := viper.GetString("dnsmasq.log.file")
 	if logTail, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
 
-		for line := range logTail.Lines {
-			bdd.Insert(parser.LogParser.ParseLine(line.Text))
+		// Parallelise log parsing
+		for i := 0; i < runtime.NumCPU()/2; i++ {
+			go func() {
+				for line := range logTail.Lines {
+					bdd.Insert(parser.LogParser.ParseLine(line.Text))
+				}
+			}()
 		}
 
 	} else {

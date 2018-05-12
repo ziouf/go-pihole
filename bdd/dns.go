@@ -2,7 +2,6 @@ package bdd
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // DNS
@@ -17,15 +16,11 @@ type DNS struct {
 	Secured bool
 }
 
-func (d *DNS) Encode() ([]byte, []byte) {
-	key := []byte(d.Date.Format(time.Stamp))
+func (d *DNS) Encode() []byte {
 	value, _ := json.Marshal(d)
-	return key, value
+	return value
 }
 
 func (d *DNS) Decode(data []byte) error {
-	if err := json.Unmarshal(data, d); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(data, d)
 }

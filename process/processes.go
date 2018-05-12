@@ -37,7 +37,7 @@ func Init() {
 
 func Start(name Key) error {
 	if v, ok := pMap[name]; !ok {
-		return fmt.Errorf(`Process [%s] not initialized`, name)
+		return fmt.Errorf(`Process [%s] not found`, name)
 	} else {
 		return v.start()
 	}
@@ -45,7 +45,7 @@ func Start(name Key) error {
 
 func Restart(name Key) error {
 	if v, ok := pMap[name]; !ok {
-		return fmt.Errorf(`Process [%s] not initialized`, name)
+		return fmt.Errorf(`Process [%s] not found`, name)
 	} else {
 		return v.restart()
 	}
@@ -53,7 +53,7 @@ func Restart(name Key) error {
 
 func Stop(name Key) error {
 	if v, ok := pMap[name]; !ok {
-		return fmt.Errorf(`Process [%s] not initialized`, name)
+		return fmt.Errorf(`Process [%s] not found`, name)
 	} else {
 		return v.stop()
 	}

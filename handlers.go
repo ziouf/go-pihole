@@ -10,8 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// LastDNSHandler Finds the most recent DNS log entry
-func LastDNSHandler(w http.ResponseWriter, r *http.Request) {
+func lastDNSHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		data, err := bdd.GetLast(new(bdd.DNS))
@@ -23,8 +22,7 @@ func LastDNSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// LastDHCPHandler Finds the most recent DHCP log entry
-func LastDHCPHandler(w http.ResponseWriter, r *http.Request) {
+func lastDHCPHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		data, err := bdd.GetLast(new(bdd.DHCP))
@@ -40,11 +38,11 @@ func processActionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	switch vars[`action`] {
 	case `start`:
-		process.Start(process.Key(vars[`process`]))
+		log.Println(process.Start(process.Key(vars[`process`])))
 	case `restart`:
-		process.Restart(process.Key(vars[`process`]))
+		log.Println(process.Restart(process.Key(vars[`process`])))
 	case `stop`:
-		process.Stop(process.Key(vars[`process`]))
+		log.Println(process.Stop(process.Key(vars[`process`])))
 	default:
 	}
 }

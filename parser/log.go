@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"cm-cloud.fr/go-pihole/bdd"
-	"github.com/gobuffalo/uuid"
+	"github.com/google/uuid"
 )
 
 var logRegex = regexp.MustCompile(`^([A-Z][a-z]{2} [ 1-3][0-9] [ 0-2][0-9]:[0-6]?[0-9]:[0-6]?[0-9]) ([a-z-]+)\[([0-9]+)\]: (.*)$`)
 
-// LogParser
+// LogParser ...
 var LogParser = new(logParse)
 
 type logParse struct{}
@@ -25,12 +25,11 @@ func (lp *logParse) ParseLine(line string) bdd.Encodable {
 		log.Fatalln("matches == 0 :", line)
 	}
 
-	id, _ := uuid.NewV1()
 	date, _ := time.Parse(time.Stamp, matches[1])
 	pid, _ := strconv.Atoi(matches[3])
 
 	l := &bdd.Log{
-		Model:   bdd.Model{ID: id, CreatedAt: time.Now()},
+		Model:   bdd.Model{ID: uuid.New(), CreatedAt: time.Now()},
 		Date:    date,
 		Process: matches[2],
 		PID:     pid,
