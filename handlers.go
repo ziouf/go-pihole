@@ -46,3 +46,24 @@ func processActionHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 	}
 }
+
+
+func statCountHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	switch vars[`type`] {
+	case `dns`:
+		if c, err := bdd.Count(&bdd.DNS{}); err != nil {
+			log.Println(err)
+		} else {
+			json.NewEncoder(w).Encode(c)
+		}
+	case `dhcp`:
+		if c, err := bdd.Count(&bdd.DHCP{}); err != nil {
+			log.Println(err)
+		} else {
+			json.NewEncoder(w).Encode(c)
+		}
+	default:
+
+	}
+}

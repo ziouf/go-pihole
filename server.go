@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.GOMAXPROCS(runtime.NumCPU() * 2)
 
 	// Initialize application configurations
 	// Load configuration files
@@ -99,7 +99,7 @@ func initRouter() *mux.Router {
 	apiModel.HandleFunc(`/find/logs/dns/since/{date}`, nil)  /* FindLogsSinceDate */
 	apiModel.HandleFunc(`/find/logs/dhcp/since/{date}`, nil) /* FindLogsSinceDate */
 	// Stats
-	apiModel.HandleFunc(`/stats/`, nil)
+	apiModel.HandleFunc(`/stats/{type}/count`, statCountHandler)
 
 	// DHCP
 	apiDhcp := apiRoot.PathPrefix("/dhcp").Subrouter()
@@ -125,19 +125,21 @@ func initRouter() *mux.Router {
 
 func logReaderService() {
 	file := viper.GetString("dnsmasq.log.file")
-	if logTail, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
+	if t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true}); err == nil {
 
 		// Parallelise log parsing
-		for i := 0; i < runtime.NumCPU()/2; i++ {
-			go func() {
-				for line := range logTail.Lines {
-					bdd.Insert(parser.LogParser.ParseLine(line.Text))
-				}
-			}()
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go readLogLines(t.Lines)
 		}
 
 	} else {
 		log.Printf("Error while tailing file %s : %s", file, err)
+	}
+}
+
+func readLogLines(lines chan *tail.Line) {
+	for line := range lines {
+		bdd.Insert(parser.LogParser.ParseLine(line.Text))
 	}
 }
 

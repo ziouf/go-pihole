@@ -1,14 +1,30 @@
 package bdd
 
 import (
+	"encoding/binary"
 	"log"
 	"os"
+	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/spf13/viper"
 )
 
 var db *bolt.DB
+var inserts *buffer
+var cleaner *clean
+
+// Init database
+func Init() {
+	inserts = &buffer{ticker: time.NewTicker(viper.GetDuration("db.bulk.freq"))}
+	cleaner = &clean{ticker: time.NewTicker(viper.GetDuration("db.cleaning.freq"))}
+
+	cleaner.addBucket(&DNS{})
+	cleaner.addBucket(&DHCP{})
+
+	inserts.start()
+	cleaner.start()
+}
 
 // Open and Init db
 func Open() {
@@ -23,12 +39,6 @@ func Open() {
 	// DB Config
 	db.MaxBatchSize = viper.GetInt("db.bulk.size")
 	db.MaxBatchDelay = viper.GetDuration("db.cleaning.freq")
-
-	// Insert goroutine
-	go insertService()
-
-	// DB Cleaning goroutine
-	go cleaningService()
 }
 
 // Close db and stop routines
@@ -36,10 +46,26 @@ func Close() {
 	stopServices()
 
 	if len(inserts.buffer) > 0 {
-		insertBuffer()
+		inserts.insert()
 	}
 
 	if db != nil {
 		db.Close()
 	}
+}
+
+func stopServices() {
+	inserts.ticker.Stop()
+	cleaner.ticker.Stop()
+}
+
+// Insert append to insertion buffer
+func Insert(m Serializable) {
+	inserts.append(m)
+}
+
+func itob(v uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, v)
+	return b
 }

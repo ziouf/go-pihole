@@ -1,5 +1,10 @@
 package bdd
 
+type Serializable interface {
+	Encodable
+	Decodable
+}
+
 type Encodable interface {
 	Encode() []byte
 }

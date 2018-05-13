@@ -18,7 +18,7 @@ var LogParser = new(logParse)
 
 type logParse struct{}
 
-func (lp *logParse) ParseLine(line string) bdd.Encodable {
+func (lp *logParse) ParseLine(line string) bdd.Serializable {
 	matches := logRegex.FindStringSubmatch(line)
 
 	if len(matches) == 0 {

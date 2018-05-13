@@ -45,10 +45,10 @@ func setDefaults() {
 	// SQlite
 	viper.SetDefault(`db.file.path`, filepath.Join(viper.GetString(`app.dir`), fmt.Sprintf(`%s.db`, viper.GetString(`app.name`))))
 	viper.SetDefault(`db.file.mode`, 0600)
-	viper.SetDefault(`db.bulk.size`, 2500)
-	viper.SetDefault(`db.bulk.freq`, 1*time.Second)
+	viper.SetDefault(`db.bulk.size`, 5000)
+	viper.SetDefault(`db.bulk.freq`, 500*time.Millisecond)
 	viper.SetDefault(`db.cleaning.enable`, false)
-	viper.SetDefault(`db.cleaning.freq`, 250*time.Millisecond)
+	viper.SetDefault(`db.cleaning.freq`, 10*time.Millisecond)
 	viper.SetDefault(`db.cleaning.keep`, 7*time.Hour*24)
 
 	// DNMASQ

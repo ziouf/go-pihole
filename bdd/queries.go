@@ -1,6 +1,7 @@
 package bdd
 
 import (
+	"sync/atomic"
 	"fmt"
 	"reflect"
 
@@ -37,4 +38,22 @@ func GetLast(d Decodable) (Decodable, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+func Count(d Decodable) (uint64, error) {
+	t := reflect.TypeOf(d).Elem()
+	count := uint64(0)
+	err := db.View(func(tx *bolt.Tx) error {
+		bucket, e := getBucket(tx, t.Name())
+		if e != nil {
+			return e
+		}
+		c := bucket.Cursor()
+		for k,_ := c.First(); k != nil; k,_ = c.Next() {
+			atomic.AddUint64(&count, 1)
+		}
+
+		return nil
+	})
+	return count, err
 }
