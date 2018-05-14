@@ -5,14 +5,20 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"cm-cloud.fr/go-pihole/log"
 	"github.com/boltdb/bolt"
 	"github.com/spf13/viper"
 )
 
-// ErrTickerNil ...
-var ErrTickerNil = errors.New(`Ticker must no be nil`)
+// Errors ...
+var (
+	ErrTickerNil               = errors.New(`Ticker must no be nil`)
+	ErrEmptyBuffer             = errors.New(`Buffer is empty : nothing to persist`)
+	ErrCleaningServiceDisabled = errors.New(`Db cleaning service is disabled`)
+)
 
 type buffer struct {
 	mtx    sync.Mutex
@@ -49,7 +55,7 @@ func (b *buffer) insert() error {
 	b.mtx.Unlock()
 
 	if len(buffer) <= 0 {
-		return fmt.Errorf("Buffer is empty : nothing to persist")
+		return ErrEmptyBuffer
 	}
 
 	return db.Update(func(tx *bolt.Tx) error {
@@ -74,6 +80,7 @@ type clean struct {
 }
 
 func (c *clean) addBucket(e Decodable) {
+	log.Debug().Printf("Appending bucket [%s] to auto clean list", reflect.TypeOf(e).Elem().Name())
 	c.buckets = append(c.buckets, e)
 }
 
@@ -91,14 +98,15 @@ func (c *clean) start() error {
 
 func (c *clean) clean() error {
 	if !viper.GetBool(`db.cleaning.enable`) {
-		return fmt.Errorf(`Db cleaning service is disabled`)
+		return ErrCleaningServiceDisabled
 	}
 
 	if db == nil {
-		return fmt.Errorf("Db is not open")
+		return ErrDbClosed
 	}
 
 	return db.Update(func(tx *bolt.Tx) error {
+		count := uint64(0)
 		for _, b := range c.buckets {
 			t := reflect.TypeOf(b).Elem()
 			bucket := tx.Bucket([]byte(t.Name()))
@@ -114,17 +122,20 @@ func (c *clean) clean() error {
 					pDNS.Decode(v)
 					if pDNS.Date.Before(stamp) {
 						bucket.Delete(k)
+						atomic.AddUint64(&count, 1)
 					}
 				case reflect.TypeOf(&DHCP{}).Elem():
 					pDHCP := new(DHCP)
 					pDHCP.Decode(v)
 					if pDHCP.Date.Before(stamp) {
 						bucket.Delete(k)
+						atomic.AddUint64(&count, 1)
 					}
 				default:
 				}
 			}
 		}
+		log.Verbose().Println(`Deleted`, count, `item(s)`)
 		return nil
 	})
 }

@@ -1,13 +1,13 @@
 package parser
 
 import (
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"cm-cloud.fr/go-pihole/bdd"
+	"cm-cloud.fr/go-pihole/log"
 	"github.com/google/uuid"
 )
 
@@ -22,7 +22,7 @@ func (lp *logParse) ParseLine(line string) bdd.Serializable {
 	matches := logRegex.FindStringSubmatch(line)
 
 	if len(matches) == 0 {
-		log.Fatalln("matches == 0 :", line)
+		log.Error().Println("matches == 0 :", line)
 	}
 
 	date, _ := time.Parse(time.Stamp, matches[1])

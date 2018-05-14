@@ -2,10 +2,17 @@ package files
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
+
+	"cm-cloud.fr/go-pihole/log"
+)
+
+// Errors
+var (
+	ErrNotFoundInPath = errors.New(`Bin not found in $PATH`)
 )
 
 // ReadFileLines Read file and apply fn on each line
@@ -22,9 +29,6 @@ func ReadFileLines(fileName string, fn func(string) interface{}) ([]interface{},
 				result = append(result, line)
 			}
 		}
-
-	} else {
-		log.Println(err)
 	}
 
 	return result, err
@@ -37,7 +41,9 @@ func FindBinInPath(bin string) (string, error) {
 		path := fmt.Sprintf("%s/%s", p, bin)
 		if _, err := os.Stat(path); err == nil {
 			return path, nil
+		} else {
+			log.Error().Println(err)
 		}
 	}
-	return bin, fmt.Errorf("'%s' not found in $PATH", bin)
+	return bin, ErrNotFoundInPath
 }

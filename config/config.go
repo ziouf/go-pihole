@@ -3,52 +3,81 @@ package config
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"time"
+
+	"cm-cloud.fr/go-pihole/log"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
+// Init default configuration values and configuration parsing
 func Init() {
 	setDefaults()
 	parseEnv()
 	parseFlags()
 	parseConfigFile()
+
+	// Init logger
+	log.Init(viper.GetString(`log.file`), viper.GetString(`log.level`))
+
+	// Display configuration in debug logs
+	log.Debug().Println(`== Config ==`)
+	keys := viper.AllKeys()
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := viper.Get(k)
+		t := reflect.TypeOf(v)
+		switch t.Name() {
+		case "int":
+			log.Debug().Printf("%-40s : %d", k, v.(int))
+		case "bool":
+			log.Debug().Printf("%-40s : %t", k, v.(bool))
+		default:
+			log.Debug().Printf("%-40s : %s", k, v)
+		}
+	}
+	log.Debug().Println(`============`)
 }
 
 func getApplicationPath() string {
 	// Applications current path
 	ex, err := os.Executable()
 	if err != nil {
-		log.Fatalln(err)
+		log.Error().Fatalln(err)
 	}
 	p, err := filepath.EvalSymlinks(ex)
 	if err != nil {
-		log.Fatalln(err)
+		log.Error().Fatalln(err)
 	}
 	app, err := filepath.Abs(filepath.Dir(p))
 	if err != nil {
-		log.Fatalln(err)
+		log.Error().Fatalln(err)
 	}
 	return app
 }
 
 func setDefaults() {
+	// Log
+	viper.SetDefault(`log.level`, log.INFO)
+	viper.SetDefault(`log.file`, "")
+
 	// Application
 	viper.SetDefault(`app.name`, `go-pihole`)
 	viper.SetDefault(`app.dir`, getApplicationPath())
-	viper.SetDefault(`bind`, `:8080`)
+	viper.SetDefault(`app.bind`, `:8080`)
 
 	// SQlite
 	viper.SetDefault(`db.file.path`, filepath.Join(viper.GetString(`app.dir`), fmt.Sprintf(`%s.db`, viper.GetString(`app.name`))))
 	viper.SetDefault(`db.file.mode`, 0600)
 	viper.SetDefault(`db.bulk.size`, 5000)
-	viper.SetDefault(`db.bulk.freq`, 500*time.Millisecond)
+	viper.SetDefault(`db.bulk.freq`, time.Second)
 	viper.SetDefault(`db.cleaning.enable`, false)
-	viper.SetDefault(`db.cleaning.freq`, 10*time.Millisecond)
+	viper.SetDefault(`db.cleaning.freq`, 250*time.Millisecond)
 	viper.SetDefault(`db.cleaning.keep`, 7*time.Hour*24)
 
 	// DNMASQ
@@ -71,6 +100,7 @@ func setDefaults() {
 		`https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`,
 		`https://mirror1.malwaredomains.com/files/justdomains`,
 		// ...
+		// TODO : Add more
 	})
 
 	// DNSMASQ binary location
@@ -79,7 +109,9 @@ func setDefaults() {
 
 func parseFlags() {
 	// Define flags
-	flag.String(`bind`, viper.GetString(`bind`), `IP:Port to bind HTTP server on`)
+	flag.String(`log.level`, viper.GetString(`log.level`), `Logging level`)
+	flag.String(`log.file`, viper.GetString(`log.file`), `Log output file. [Default : stderr]`)
+	flag.String(`app.bind`, viper.GetString(`bind`), `IP:Port to bind HTTP server on`)
 	flag.Bool(`db.cleaning.enable`, viper.GetBool(`db.cleaning.enable`), `Enable database auto cleaning`)
 	flag.String(`dnsmasq.log.file`, viper.GetString(`dnsmasq.log.file`), `Dnsmasq log file`)
 	flag.String(`dnsmasq.config.dir`, viper.GetString(`dnsmasq.config.dir`), `Dnsmasq configuration files directory`)

@@ -2,9 +2,16 @@ package process
 
 import (
 	"errors"
-	"fmt"
-	"log"
 	"os/exec"
+
+	"cm-cloud.fr/go-pihole/log"
+)
+
+// Errors
+var (
+	ErrRunning      = errors.New(`Already running`)
+	ErrNotRunning   = errors.New(`Not running`)
+	ErrCantKillProc = errors.New(`Can't kill process`)
 )
 
 // Process Struct that represent a process
@@ -14,6 +21,7 @@ type Process struct {
 
 // NewProcess Create new Process
 func NewProcess(bin string, args ...string) *Process {
+	log.Debug().Printf("Creating process %s with args %s", bin, args)
 	p := new(Process)
 	p.cmd = exec.Command(bin, args...)
 	return p
@@ -21,33 +29,37 @@ func NewProcess(bin string, args ...string) *Process {
 
 // Start the Process
 func (p *Process) start() error {
+	log.Debug().Printf("Starting %s", p.cmd.Args)
 	// Check if running
 	if p.isRunning() {
-		return errors.New("Already running")
+		return ErrRunning
 	}
 	// If not running, start it
 	if err := p.cmd.Start(); err != nil {
 		return err
 	}
-	log.Printf("Starting [pid : %d] %s", p.cmd.Process.Pid, p.cmd.Args)
+	log.Info().Printf("Starting [pid : %d] %s", p.cmd.Process.Pid, p.cmd.Args)
 	return nil
 }
 
 // Stop Kill the Process
 func (p *Process) stop() error {
+	log.Debug().Printf("Stopping %s", p.cmd.Args)
 	// Check if running
 	if !p.isRunning() {
-		return fmt.Errorf("Not running [pid : %d]", p.cmd.Process.Pid)
+		return ErrNotRunning
 	}
 
 	if err := p.cmd.Process.Kill(); err != nil {
-		return fmt.Errorf("Can't kill process [pid: %d] : %s", p.cmd.Process.Pid, err)
+		log.Error().Printf("Can't kill process [pid: %d] : %s", p.cmd.Process.Pid, err)
+		return ErrCantKillProc
 	}
 	return nil
 }
 
 // Restart Restart the Process
 func (p *Process) restart() error {
+	log.Debug().Printf("Restarting %s", p.cmd.Args)
 	if p.isRunning() {
 		p.stop()
 	}

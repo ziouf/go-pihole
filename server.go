@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +11,7 @@ import (
 	"cm-cloud.fr/go-pihole/actions"
 	"cm-cloud.fr/go-pihole/bdd"
 	"cm-cloud.fr/go-pihole/config"
+	"cm-cloud.fr/go-pihole/log"
 	"cm-cloud.fr/go-pihole/parser"
 	"cm-cloud.fr/go-pihole/process"
 
@@ -46,7 +46,7 @@ func init() {
 	// Init HTTP Server
 	srv = &http.Server{
 		Handler: handlers.LoggingHandler(os.Stdout, initRouter()),
-		Addr:    viper.GetString("bind"),
+		Addr:    viper.GetString(`app.bind`),
 		// Good practice to enforce timeouts
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -74,12 +74,12 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 
-	log.Println("Shutting down the server...")
+	log.Info().Println("Shutting down the server...")
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	srv.Shutdown(ctx)
 
-	log.Println("Server gracefully stopped")
+	log.Info().Println("Server gracefully stopped")
 }
 
 func initRouter() *mux.Router {
@@ -133,7 +133,7 @@ func logReaderService() {
 		}
 
 	} else {
-		log.Printf("Error while tailing file %s : %s", file, err)
+		log.Error().Printf("Error while tailing file %s : %s", file, err)
 	}
 }
 
@@ -144,5 +144,7 @@ func readLogLines(lines chan *tail.Line) {
 }
 
 func httpServer() {
-	log.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Error().Println(err)
+	}
 }
