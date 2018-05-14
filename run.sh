@@ -45,7 +45,7 @@ fn_run() {
     --dnsmasq.config.dir $(pwd)/tmp             \
     --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
     --log.level VERBOSE                         \
-    --log.file $(pwd)/go-pihole.log             \
+    --log.path $(pwd)                           \
     # --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
     # --db.file $(pwd)/go-pihole.db           \
     # --dnsmasq.embeded

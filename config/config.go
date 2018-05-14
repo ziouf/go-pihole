@@ -23,7 +23,7 @@ func Init() {
 	parseConfigFile()
 
 	// Init logger
-	log.Init(viper.GetString(`log.file`), viper.GetString(`log.level`))
+	log.Init(viper.GetString(`log.path`), viper.GetString(`log.level`))
 
 	// Display configuration in debug logs
 	log.Debug().Println(`== Config ==`)
@@ -64,7 +64,7 @@ func getApplicationPath() string {
 func setDefaults() {
 	// Log
 	viper.SetDefault(`log.level`, log.INFO)
-	viper.SetDefault(`log.file`, "")
+	viper.SetDefault(`log.path`, "")
 
 	// Application
 	viper.SetDefault(`app.name`, `go-pihole`)
@@ -110,7 +110,7 @@ func setDefaults() {
 func parseFlags() {
 	// Define flags
 	flag.String(`log.level`, viper.GetString(`log.level`), `Logging level`)
-	flag.String(`log.file`, viper.GetString(`log.file`), `Log output file. [Default : stderr]`)
+	flag.String(`log.path`, viper.GetString(`log.path`), `Log output file. [Default : stderr]`)
 	flag.String(`app.bind`, viper.GetString(`bind`), `IP:Port to bind HTTP server on`)
 	flag.Bool(`db.cleaning.enable`, viper.GetBool(`db.cleaning.enable`), `Enable database auto cleaning`)
 	flag.String(`dnsmasq.log.file`, viper.GetString(`dnsmasq.log.file`), `Dnsmasq log file`)

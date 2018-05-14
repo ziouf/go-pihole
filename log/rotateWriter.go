@@ -16,20 +16,22 @@ type RotateWriter struct {
 func newRotateWriter(filename string) *RotateWriter {
 	w := new(RotateWriter)
 	w.filename = filename
-	w.ticker = time.NewTicker(time.Second * 10)
+	w.ticker = time.NewTicker(time.Hour * 24)
 	if err := w.rotate(); err != nil {
 		panic(err)
 	}
 
-	go func(w *RotateWriter) {
-		for range w.ticker.C {
-			if err := w.rotate(); err != nil {
-				println(err)
-			}
-		}
-	}(w)
+	go rotateService(w)
 
 	return w
+}
+
+func rotateService(w *RotateWriter) {
+	for range w.ticker.C {
+		if err := w.rotate(); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (w *RotateWriter) Write(output []byte) (int, error) {
@@ -38,29 +40,29 @@ func (w *RotateWriter) Write(output []byte) (int, error) {
 	return w.fd.Write(output)
 }
 
-func (w *RotateWriter) rotate() (err error) {
+func (w *RotateWriter) rotate() error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
 	if w.fd != nil {
-		println("Close FD")
-		err = w.fd.Close()
+		err := w.fd.Close()
 		w.fd = nil
 		if err != nil {
-			return
+			return err
 		}
 	}
 
-	if _, err = os.Stat(w.filename); os.IsExist(err) {
-		println("Rename file")
-		err = os.Rename(w.filename, w.filename+"."+time.Now().Format(time.RFC3339))
-		if err != nil {
-			return
+	if _, err := os.Stat(w.filename); err == nil || os.IsExist(err) {
+		newf := w.filename + "." + time.Now().Format(time.RFC3339)
+		if err := os.Rename(w.filename, newf); err != nil {
+			return err
 		}
+	}
+
+	if fd, err := os.Create(w.filename); err != nil {
+		return err
 	} else {
-		println(w.filename, "does not exists")
+		w.fd = fd
 	}
-
-	w.fd, err = os.Create(w.filename)
-	return
+	return nil
 }
