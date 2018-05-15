@@ -26,13 +26,14 @@ fn_build() {
     cd ${DIR}
 
     echo "========================="
+    export CGO_ENABLED=0
     for GOARM in 5 6 7
     do 
         export GOOS=linux
         export GOARCH=arm
         export GOARM
         echo "Building $GOOS-$GOARCH-$GOARM"
-        go build -o ${DIR}/bin/${GOOS}/${GOARCH}-${GOARM}/go-pihole
+        go build -o ${DIR}/bin/${GOOS}/${GOARCH}-${GOARM}/go-pihole -a -ldflags '-extldflags "-static"'
     done
 
     for GOOS in darwin linux windows; do
@@ -40,8 +41,7 @@ fn_build() {
             export GOOS
             export GOARCH
             echo "Building $GOOS-$GOARCH"
-            # go build -o ${DIR}/bin/go-pihole-$GOOS-$GOARCH
-            go build -o ${DIR}/bin/${GOOS}/${GOARCH}/go-pihole
+            go build -o ${DIR}/bin/${GOOS}/${GOARCH}/go-pihole -a -ldflags '-extldflags "-static"'
         done
     done
 }

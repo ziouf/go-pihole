@@ -74,7 +74,10 @@ func setDefaults() {
 	viper.SetDefault(`log.path`, "")
 	viper.SetDefault(`log.file`, viper.GetString(`app.name`))
 
-	// SQlite
+	// UI
+	viper.SetDefault(`ui.path`, path.Join(viper.GetString(`app.dir`), `ui/dist/`))
+
+	// Database
 	viper.SetDefault(`db.file.path`, filepath.Join(viper.GetString(`app.dir`), fmt.Sprintf(`%s.db`, viper.GetString(`app.name`))))
 	viper.SetDefault(`db.file.mode`, 0600)
 	viper.SetDefault(`db.bulk.size`, 5000)

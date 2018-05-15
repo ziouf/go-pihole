@@ -118,7 +118,7 @@ func initRouter() *mux.Router {
 	apiConfig.HandleFunc(``, nil)
 
 	// Static content route
-	root.PathPrefix("/").Handler(http.FileServer(http.Dir("./ui/dist/")))
+	root.PathPrefix("/").Handler(http.FileServer(http.Dir(viper.GetString(`ui.path`))))
 
 	return root
 }
