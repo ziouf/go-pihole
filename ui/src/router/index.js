@@ -9,11 +9,6 @@ export default new Router({
     {
       path: '/',
       name: '',
-      component: {}
-    },
-    {
-      path: '/hello',
-      name: 'HelloWorld',
       component: HelloWorld
     }
   ]

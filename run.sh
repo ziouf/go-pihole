@@ -46,6 +46,12 @@ fn_build() {
     done
 }
 
+fn_package() {
+    echo "========================="
+    echo "Package"
+    tar czf go-pihole.tar.gz bin ui/dist
+}
+
 fn_test() {
     echo "========================="
     echo "Run go tests"
@@ -88,6 +94,7 @@ case $1 in
     build)
         fn_test
         fn_build
+        fn_package
     ;;
     run)
         fn_test
