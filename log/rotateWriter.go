@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// RotateWriter is a custom implementation of io.Writer to rotate logs after some time
 type RotateWriter struct {
 	lock     sync.Mutex
 	filename string
@@ -40,29 +41,28 @@ func (w *RotateWriter) Write(output []byte) (int, error) {
 	return w.fd.Write(output)
 }
 
-func (w *RotateWriter) rotate() error {
+func (w *RotateWriter) rotate() (err error) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
 	if w.fd != nil {
-		err := w.fd.Close()
+		err = w.fd.Close()
 		w.fd = nil
 		if err != nil {
 			return err
 		}
 	}
 
-	if _, err := os.Stat(w.filename); err == nil || os.IsExist(err) {
-		newf := w.filename + "." + time.Now().Format(time.RFC3339)
+	if _, err = os.Stat(w.filename); err == nil || os.IsExist(err) {
+		newf := w.filename + "." + time.Now().Format("2006-01-02_15-04-05")
 		if err := os.Rename(w.filename, newf); err != nil {
 			return err
 		}
 	}
 
-	if fd, err := os.Create(w.filename); err != nil {
+	w.fd, err = os.Create(w.filename)
+	if err != nil {
 		return err
-	} else {
-		w.fd = fd
 	}
 	return nil
 }

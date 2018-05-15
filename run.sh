@@ -26,9 +26,24 @@ fn_build() {
     cd ${DIR}
 
     echo "========================="
-    echo "Build Backend"
+    for GOARM in 5 6 7
+    do 
+        export GOOS=linux
+        export GOARCH=arm
+        export GOARM
+        echo "Building $GOOS-$GOARCH-$GOARM"
+        go build -o ${DIR}/bin/${GOOS}/${GOARCH}-${GOARM}/go-pihole
+    done
 
-    go build
+    for GOOS in darwin linux windows; do
+        for GOARCH in 386 amd64; do
+            export GOOS
+            export GOARCH
+            echo "Building $GOOS-$GOARCH"
+            # go build -o ${DIR}/bin/go-pihole-$GOOS-$GOARCH
+            go build -o ${DIR}/bin/${GOOS}/${GOARCH}/go-pihole
+        done
+    done
 }
 
 fn_test() {
@@ -45,7 +60,7 @@ fn_run() {
     --dnsmasq.config.dir $(pwd)/tmp             \
     --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
     --log.level VERBOSE                         \
-    --log.path $(pwd)                           \
+    --log.path $(pwd)/tmp                       \
     # --dnsmasq.bin $(pwd)/../dnsmasq/src/dnsmasq \
     # --db.file $(pwd)/go-pihole.db           \
     # --dnsmasq.embeded

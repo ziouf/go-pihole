@@ -3,9 +3,8 @@ package log
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
-	"os"
-	"path"
 	"strings"
 )
 
@@ -37,12 +36,24 @@ var loggerMap = make(map[int]*log.Logger, 0)
 
 // Init logger configuration
 func Init(file string, lvl string) {
-	logger = logging{path: file, level: getLevel(lvl)}
+	logger = logging{
+		path:   file,
+		level:  getLevel(lvl),
+		writer: newRotateWriter(file),
+		flags: func() int {
+			if len(file) > 0 {
+				return log.LstdFlags
+			}
+			return 0
+		}(),
+	}
 }
 
 type logging struct {
-	path  string
-	level lvl
+	path   string
+	level  lvl
+	writer io.Writer
+	flags  int
 }
 
 type lvl struct {
@@ -61,14 +72,7 @@ func (lvl lvl) Equals(s string) bool {
 func get(lvl lvl) *log.Logger {
 	l, ok := loggerMap[lvl.id]
 	if !ok {
-		l = log.New(os.Stderr, fmt.Sprintf("[%s]", strings.ToUpper(lvl.label)), log.LstdFlags)
-		if len(logger.path) == 0 {
-			l.SetFlags(0)
-			l.SetOutput(os.Stderr)
-		} else {
-			l.SetFlags(log.LstdFlags)
-			l.SetOutput(newRotateWriter(path.Join(logger.path, lvl.label+".log")))
-		}
+		l = log.New(logger.writer, fmt.Sprintf("[%s]", strings.ToUpper(lvl.label)), logger.flags)
 		loggerMap[lvl.id] = l
 	}
 	return l

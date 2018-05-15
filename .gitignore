@@ -1,5 +1,6 @@
 vendor
 tmp
+bin
 
 debug
 *.sqlite*

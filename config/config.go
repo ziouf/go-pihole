@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -23,7 +24,7 @@ func Init() {
 	parseConfigFile()
 
 	// Init logger
-	log.Init(viper.GetString(`log.path`), viper.GetString(`log.level`))
+	log.Init(path.Join(viper.GetString(`log.path`), viper.GetString(`log.file`)), viper.GetString(`log.level`))
 
 	// Display configuration in debug logs
 	log.Debug().Println(`== Config ==`)
@@ -62,14 +63,16 @@ func getApplicationPath() string {
 }
 
 func setDefaults() {
-	// Log
-	viper.SetDefault(`log.level`, log.INFO)
-	viper.SetDefault(`log.path`, "")
 
 	// Application
 	viper.SetDefault(`app.name`, `go-pihole`)
 	viper.SetDefault(`app.dir`, getApplicationPath())
 	viper.SetDefault(`app.bind`, `:8080`)
+
+	// Log
+	viper.SetDefault(`log.level`, log.INFO)
+	viper.SetDefault(`log.path`, "")
+	viper.SetDefault(`log.file`, viper.GetString(`app.name`))
 
 	// SQlite
 	viper.SetDefault(`db.file.path`, filepath.Join(viper.GetString(`app.dir`), fmt.Sprintf(`%s.db`, viper.GetString(`app.name`))))
