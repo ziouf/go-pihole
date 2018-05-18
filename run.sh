@@ -1,31 +1,35 @@
 #!  /usr/bin/env bash
 
 DIR=$(cd $(dirname ${0}) && pwd)
+GODIR=${DIR}/backend
+UIDIR=${DIR}/frontend
+
+GOPACKAGES=cm-cloud.fr/go-pihole/backend/...
 
 fn_dep() {
     echo "========================="
     echo "Update depecendies"
+    cd ${GODIR}
 
-    # dep ensure
-    dep ensure -update -v
+    dep ensure -v
+    # dep ensure -update -v
 
-    # go get -u github.com/gorilla/handlers
-    # go get -u github.com/gorilla/mux
-    # go get -u github.com/hpcloud/tail
-    # go get -u github.com/spf13/viper
-    # go get -u github.com/boltdb/bolt
+    cd ${DIR}
 }
 
 fn_build() {
     echo "========================="
-    echo "Build UI"
-    cd ${DIR}/ui
+    echo "Build Frontend"
+    cd ${UIDIR}
 
     npm run-script build
     
     cd ${DIR}
 
     echo "========================="
+    echo "Build Backend"
+    cd ${GODIR}
+
     export CGO_ENABLED=0
     for GOARM in 5 6 7
     do 
@@ -33,35 +37,41 @@ fn_build() {
         export GOARCH=arm
         export GOARM
         echo "Building $GOOS-$GOARCH-$GOARM"
-        go build -o ${DIR}/bin/${GOOS}/${GOARCH}-${GOARM}/go-pihole -a -ldflags '-extldflags "-static"'
+        go build -o ${GODIR}/bin/${GOOS}/${GOARCH}-${GOARM}/go-pihole -a -ldflags '-extldflags "-static"'
     done
 
     for GOOS in darwin linux windows; do
         for GOARCH in 386 amd64; do
-            export GOOS
+            export GOOS 
             export GOARCH
             echo "Building $GOOS-$GOARCH"
-            go build -o ${DIR}/bin/${GOOS}/${GOARCH}/go-pihole -a -ldflags '-extldflags "-static"'
+            go build -o ${GODIR}/bin/${GOOS}/${GOARCH}/go-pihole -a -ldflags '-extldflags "-static"'
         done
     done
+    
+    cd ${DIR}
 }
 
 fn_package() {
     echo "========================="
     echo "Package"
-    tar czf go-pihole.tar.gz bin ui/dist
+    package_file=go-pihole.tar.gz
+ 
+    [ -f ${DIR}/${package_file} ] && rm ${DIR}/${package_file}
+
+    tar czf ${DIR}/${package_file} backend/bin frontend/dist
 }
 
 fn_test() {
     echo "========================="
     echo "Run go tests"
-    go test cm-cloud.fr/go-pihole/...
+    go test ${GOPACKAGES}
 }
 
 fn_run() {
     echo "========================="
     echo "Starting go server"
-    go run ${DIR}/*.go                          \
+    go run ${GODIR}/*.go                        \
     --db.cleaning.enable                        \
     --dnsmasq.config.dir $(pwd)/tmp             \
     --dnsmasq.log.file $(pwd)/tmp/pihole.log    \
@@ -92,6 +102,7 @@ case $1 in
         fn_test
     ;;
     build)
+        fn_dep
         fn_test
         fn_build
         fn_package
